@@ -4,43 +4,87 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Test_Client
 {
-    class Program
+    public class Program
     {
+        public static IPEndPoint Endpoint = new IPEndPoint(IPAddress.Parse("24.20.157.144"), 57000); // endpoint where server is listening
+        public static UdpClient Client = new UdpClient();
+        public static bool messageReceived = false;
+
+        public struct UdpState
+        {
+            public IPEndPoint Endpoint;
+            public UdpClient Client;
+        }
+
         static void Main(string[] args)
         {
             byte[] Data = new byte[50000];
-            UdpClient client = new UdpClient();
-            IPEndPoint ep = new IPEndPoint(IPAddress.Parse("24.20.157.144"), 57000); // endpoint where server is listening
+            string Username;
 
             try
             {
-                client.Connect(ep);
+                Client.Connect(Endpoint);
             }
             catch
             {
-                client.Connect(ep);
+                Client.Connect(Endpoint);
             }
 
             for (int i = 0; i < 50000; i++)
             {
                 Data[i] = 0;
             }
+            
+            UdpState state = new UdpState();
+            state.Endpoint = Endpoint;
+            state.Client = Client;
+
+            // establish connection
+            Username = Console.ReadLine();
+            Client.Send(Encoding.Default.GetBytes(Username), Encoding.Default.GetBytes(Username).Count());
+            var receivedData = Client.Receive(ref Endpoint);
+            Console.Write($"Connection Established! {Endpoint}\n");
 
             // send data
             for (int i = 0; i < 20; i++)
             {
-                client.Send(Data, 50000);
-                var receivedData = client.Receive(ref ep);
-                Console.Write($"receive data from {ep}\n");
+                Client.Send(Data, 50000);
+                Console.WriteLine($"Packet Sent..");
+                Console.WriteLine("listening for messages");
+                Client.BeginReceive(new AsyncCallback(ReceiveCallback), state);
+                DateTime dateTime = DateTime.UtcNow;
+                while (messageReceived != true)
+                {
+                    Thread.Sleep(100);
+                    if (DateTime.UtcNow.Millisecond > dateTime.Millisecond + 1000)
+                    {
+                        Client.Send(Data, 50000);
+                    }
+                }
+                messageReceived = false;
+                /*
+                receivedData = Client.Receive(ref Endpoint);*/
             }
 
             // then receive data
 
             Console.Read();
+        }
+
+        public static void ReceiveCallback(IAsyncResult ar)
+        {
+            IPEndPoint endpoint = (IPEndPoint)((UdpState)(ar.AsyncState)).Endpoint;
+            UdpClient client = (UdpClient)((UdpState)(ar.AsyncState)).Client;
+
+            byte[] receiveBytes = client.EndReceive(ar, ref endpoint);
+
+            Console.WriteLine("Received Response!");
+            messageReceived = true;
         }
     }
 }
