@@ -35,11 +35,10 @@ namespace Test_Client
                 Client.Connect(Endpoint);
             }
 
-            for (int i = 0; i < 50000; i++)
-            {
-                Data[i] = 0;
-            }
-            
+            string[] informationToWriteBiome = new string[1000000];
+            string[] informationToWriteMod = new string[1000000];
+            byte[] receivedData = new byte[50000];
+
             UdpState state = new UdpState();
             state.Endpoint = Endpoint;
             state.Client = Client;
@@ -47,28 +46,21 @@ namespace Test_Client
             // establish connection
             Username = Console.ReadLine();
             Client.Send(Encoding.Default.GetBytes(Username), Encoding.Default.GetBytes(Username).Count());
-            var receivedData = Client.Receive(ref Endpoint);
+            Client.Receive(ref Endpoint);
             Console.Write($"Connection Established! {Endpoint}\n");
 
-            // send data
+            // receive data
             for (int i = 0; i < 20; i++)
             {
-                Client.Send(Data, 50000);
-                Console.WriteLine($"Packet Sent..");
-                Console.WriteLine("listening for messages");
+                Console.WriteLine("Listening for Messages");
                 Client.BeginReceive(new AsyncCallback(ReceiveCallback), state);
-                DateTime dateTime = DateTime.UtcNow;
                 while (messageReceived != true)
                 {
-                    Thread.Sleep(100);
-                    if (DateTime.UtcNow.Millisecond > dateTime.Millisecond + 1000)
-                    {
-                        Client.Send(Data, 50000);
-                    }
+                    Thread.Sleep(50);
                 }
+                Client.Send(new byte[] { 1 }, 1);
+
                 messageReceived = false;
-                /*
-                receivedData = Client.Receive(ref Endpoint);*/
             }
 
             // then receive data
@@ -83,7 +75,7 @@ namespace Test_Client
 
             byte[] receiveBytes = client.EndReceive(ar, ref endpoint);
 
-            Console.WriteLine("Received Response!");
+            Console.WriteLine($"Received Response! {receiveBytes.Count()}");
             messageReceived = true;
         }
     }
