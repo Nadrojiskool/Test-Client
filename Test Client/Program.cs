@@ -24,14 +24,46 @@ namespace Test_Client
 
         static void Main(string[] args)
         {
-            Listener(Client);
+            UserList.Add(new User("Bob", Endpoint));
 
-            Task.Delay(1000);
-            Speaker(new byte[] { 11 }, Client, Endpoint);
+            Job job = new Job((byte)UserList[0].JobList.Count(), 5, UserList[0].Endpoint, Endpoint);
+            Console.WriteLine($"Starting Job ID {UserList[0].JobList.Count()}");
+            UserList[0].JobList.Add(job);
+            JobManager(job);
 
-            while (AcceptConnections)
+            Listener(Client).Wait();
+        }
+        public static async Task JobManager(Job job)
+        {
+            job.IsActive = true;
+            while (job.IsActive)
             {
-                Task.Delay(1000);
+                if (job.Type == 2)
+                {
+                    Console.WriteLine($"Sending Confirmation for Job ID {job.ID}...");
+                    Speaker(new byte[] { 2, job.ID }, Client, Endpoint);
+                    if (job.ElapsedTime.ElapsedMilliseconds > 5)
+                    {
+                        job.IsActive = false;
+                        return;
+                    }
+                    await Task.Delay(1000);
+                }
+                else if (job.Type == 5)
+                {
+                    if (job.ByteList.Count == 20)
+                    {
+                        Console.WriteLine($"Byte List Full!");
+                        Job j = new Job(job.ID, 2, job.Employee, job.Employer);
+                        UserList[0].JobList.Add(j);
+                        JobManager(j);
+                        job.IsCompleted = true;
+                        job.IsActive = false;
+                        return;
+                    }
+                    Speaker(new byte[] { 5, job.ID }, Client, Endpoint);
+                }
+                await Task.Delay(1000);
             }
         }
 
@@ -45,20 +77,42 @@ namespace Test_Client
                 Console.WriteLine("Listening for Information..");
                 Data data = new Data(await Task.Run(() => client.Receive(ref remoteEP)), remoteEP);
                 Console.WriteLine($"Received Information.. {data.Byte[0]} // {remoteEP}");
-                if (data.Byte[0] == 2)
-                {
+                DataProcessor(data.Byte, client, remoteEP);
+            }
+        }
 
-                }
-                else
+        public static async Task DataProcessor(byte[] packet, UdpClient client, IPEndPoint endpoint)
+        {
+            Console.WriteLine($"Received Packet Type {packet[0]} ID {packet[1]}");
+            if (packet[0] == 2)
+            {
+
+            }
+            else if (packet[0] == 5)
+            {
+                foreach (Job job in UserList[0].JobList)
                 {
-                    if (data.Byte[0] == delay + 2)
+                    if (job.ID == packet[1])
                     {
-                        delay = data.Byte[0];
-                        Console.WriteLine($"New Delay: {delay}");
-                        Speaker(new byte[] { (byte)(delay + 1) }, client, remoteEP);
-                        Speaker(new byte[] { 2, (byte)(delay + 1) }, client, remoteEP);
+                        if (!job.ByteList.Any(b => b.Length == packet.Length))
+                        {
+                            Console.WriteLine($"Adding Packet of Length: {packet.Length}");
+                            job.ByteList.Add(packet);
+                            job.ByteList.Sort((a, b) => a.Length.CompareTo(b.Length));
+                            Console.WriteLine($"ByteList Length of: {job.ByteList.Count}");
+                        }
                     }
                 }
+            }
+            else
+            {
+                /*if (packet[0] == delay + 2)
+                {
+                    delay = packet[0];
+                    Console.WriteLine($"New Delay: {delay}");
+                    Speaker(new byte[] { (byte)(delay + 1) }, client, endpoint);
+                    Speaker(new byte[] { 2, (byte)(delay + 1) }, client, endpoint);
+                }*/
             }
         }
 
@@ -66,21 +120,17 @@ namespace Test_Client
         {
             if (packet[0] == 2)
             {
-                Speaker2(packet, client, endpoint);
+                Console.WriteLine($"Sending Confirmation ({packet[0]})");
+                client.Send(packet, packet.Length, endpoint);
+            }
+            else if (packet[0] == 5)
+            {
+                Console.WriteLine($"Sending Request Type {packet[0]} ID {packet[1]} ");
+                client.Send(packet, packet.Length, endpoint);
             }
             else
             {
-                SpeakerElse(packet, client, endpoint);
-            }
-        }
-
-        public static async Task Speaker2(byte[] packet, UdpClient client, IPEndPoint endpoint)
-        {
-            while (packet[1] > delay)
-            {
-                Console.WriteLine($"Sending Confirmation ({packet[0]})");
-                client.Send(packet, 1, endpoint);
-                await Task.Delay(1000);
+                //SpeakerElse(packet, client, endpoint);
             }
         }
 
