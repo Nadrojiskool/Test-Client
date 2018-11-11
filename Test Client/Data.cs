@@ -9,12 +9,12 @@ namespace Test_Client
 {
     public class Data
     {
-        public byte[] Byte = new byte[50000];
+        public byte[] Bytes = new byte[50000];
         public IPEndPoint Endpoint;
 
         public Data(byte[] b, IPEndPoint ep)
         {
-            Byte = b;
+            Bytes = b;
             Endpoint = ep;
         }
     }

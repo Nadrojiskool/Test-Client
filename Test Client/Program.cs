@@ -76,8 +76,8 @@ namespace Test_Client
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 56000);
                 Console.WriteLine("Listening for Information..");
                 Data data = new Data(await Task.Run(() => client.Receive(ref remoteEP)), remoteEP);
-                Console.WriteLine($"Received Information.. {data.Byte[0]} // {remoteEP}");
-                DataProcessor(data.Byte, client, remoteEP);
+                Console.WriteLine($"Received Information.. {data.Bytes[0]} // {remoteEP}");
+                DataProcessor(data.Bytes, client, remoteEP);
             }
         }
 

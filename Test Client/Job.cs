@@ -25,7 +25,6 @@ namespace Test_Client
             Type = type;
             Employee = ep;
             Employer = EP;
-            ElapsedTime.Start();
         }
     }
 }
