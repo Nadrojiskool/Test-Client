@@ -51,7 +51,7 @@ namespace Test_Client
                 }
                 else if (job.Type == 5)
                 {
-                    if (job.ByteList.Count == 20)
+                    if (job.ByteList.Count == 25)
                     {
                         Console.WriteLine($"Byte List Full!");
                         Job j = new Job(job.ID, 2, job.Employee, job.Employer);
@@ -106,13 +106,7 @@ namespace Test_Client
             }
             else
             {
-                /*if (packet[0] == delay + 2)
-                {
-                    delay = packet[0];
-                    Console.WriteLine($"New Delay: {delay}");
-                    Speaker(new byte[] { (byte)(delay + 1) }, client, endpoint);
-                    Speaker(new byte[] { 2, (byte)(delay + 1) }, client, endpoint);
-                }*/
+
             }
         }
 
@@ -130,82 +124,17 @@ namespace Test_Client
             }
             else
             {
-                //SpeakerElse(packet, client, endpoint);
-            }
-        }
 
-        public static async Task SpeakerElse(byte[] packet, UdpClient client, IPEndPoint endpoint)
-        {
-            while (packet[0] > delay)
-            {
-                Console.WriteLine($"Requesting Delay Increase to: {packet[0]}");
-                client.Send(packet, 1, endpoint);
-                await Task.Delay(500);
             }
         }
 
 
 
-        /*public static IPEndPoint Endpoint = new IPEndPoint(IPAddress.Parse("24.20.157.144"), 57000); // endpoint where server is listening
-        public static bool messageReceived = false;
-        public static bool messageStarted = false;
-        public static bool messageCompleted = false;
-        public static bool receiveStarted = false;
+        /*
         public static string[] informationToWriteBiome = new string[1000000];
         public static string[] informationToWriteMod = new string[1000000];
         public static byte[] receivedBytes = new byte[50000];
-        
-        static void Main(string[] args)
-        {
-            NewMain().Wait();
-        }
 
-        public static async Task NewMain()
-        {
-            byte[] Data = new byte[50000];
-            string Username;
-            UdpClient Client = new UdpClient();
-
-            try
-            {
-                Client.Connect(Endpoint);
-            }
-            catch
-            {
-                Client.Connect(Endpoint);
-            }
-
-            // establish connection
-            Username = Console.ReadLine();
-            Client.Send(Encoding.Default.GetBytes(Username), Encoding.Default.GetBytes(Username).Count());
-            Console.Write($"Connection Established! {Endpoint}\n");
-
-            ReceiveData(Client);
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            Client.Send(new byte[] { 10, 1 }, 2);
-            
-            for (int i = 0; i < 1000; i++)
-            {
-                if (stopwatch.ElapsedMilliseconds > 1000)
-                {
-                    Client.Send(new byte[] { 10, 1 }, 2);
-                    Console.WriteLine("Sent 10");
-                    stopwatch.Restart();
-                }
-                else if (messageStarted == true)
-                {
-                    break;
-                }
-                else { Thread.Sleep(50); }
-            }
-
-            while (!messageCompleted)
-            {
-                Thread.Sleep(500);
-            }
-            Console.WriteLine($"Completed! {informationToWriteBiome.Count()} {informationToWriteMod.Count()}");
-        }
 
         public static async Task ReceiveData(UdpClient client)
         {
